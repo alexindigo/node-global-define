@@ -13,10 +13,6 @@ if (!module.constructor.prototype.define)
   module.constructor.prototype.define = function(id, deps, initializer)
   {
     var moduleDefine = defineFactory(this);
-console.log('');
-console.log('requirejs-define', this.filename, id);
-console.log('');
-
     return moduleDefine(id, deps, initializer);
   }
 
