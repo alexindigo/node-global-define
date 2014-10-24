@@ -29,5 +29,5 @@ if (!module.constructor.prototype.define)
 module.exports = function(options)
 {
   basePath = options.path;
-  defineFactory.basePath(options.path);
+  defineFactory.withExtras(['tests']).basePath(options.path);
 }
