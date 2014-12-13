@@ -1,6 +1,6 @@
 {
   "name": "requirejs-define",
-  "version": "0.1.4",
+  "version": "1.0.0",
   "description": "Creates global define function to mimic requirejs define in node",
   "main": "index.js",
   "scripts": {
@@ -20,7 +20,7 @@
     "server"
   ],
   "dependencies": {
-    "rendr-amdefine": "0.x"
+    "amdefine": ">=0.1.0"
   },
   "author": "Alex Indigo <iam@alexindigo.com>",
   "license": "MIT",
