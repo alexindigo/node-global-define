@@ -8,7 +8,7 @@ Using [AMDefine](https://npmjs.org/package/amdefine) under the hood.
 `index.js`:
 
 ```javascript
-require('requirejs-define')({path: __dirname});
+require('requirejs-define')({basePath: __dirname});
 ```
 
 `module.js`:

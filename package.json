@@ -1,6 +1,6 @@
 {
   "name": "requirejs-define",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Creates global define function to mimic requirejs define in node",
   "main": "index.js",
   "scripts": {
