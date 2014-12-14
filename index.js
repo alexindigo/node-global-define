@@ -52,7 +52,7 @@ function amdefineWorkaround(requiredModule)
     // force it to be executed anyway
     if (typeof id == 'string')
     {
-      define.require(id);
+      requiredModule.exports = define.require(id);
     }
   }
 
@@ -89,7 +89,7 @@ function pretendRequire(baseModule)
         // everything fits nicely, get the full thing
         // file might not exist at this point
         // but its legit developer's error
-        moduleId = path.resolve(basePath, modulePath);
+        modulePath = path.resolve(basePath, modulePath);
       }
     }
 
