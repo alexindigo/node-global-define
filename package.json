@@ -1,6 +1,6 @@
 {
-  "name": "requirejs-define",
-  "version": "1.0.2",
+  "name": "global-define",
+  "version": "1.0.0",
   "description": "Creates global define function to mimic requirejs define in node",
   "main": "index.js",
   "scripts": {
@@ -8,24 +8,26 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/alexindigo/node-requirejs-define.git"
+    "url": "https://github.com/alexindigo/node-global-define.git"
   },
   "keywords": [
-    "require",
-    "requirejs",
+    "global",
     "define",
     "amd",
-    "global",
+    "requirejs",
+    "require",
     "node",
-    "server"
+    "server",
+    "isomorphic"
   ],
   "dependencies": {
-    "amdefine": ">=0.1.0"
+    "amdefine": ">=0.1.0",
+    "minimatch": "2.x"
   },
   "author": "Alex Indigo <iam@alexindigo.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/alexindigo/node-requirejs-define/issues"
+    "url": "https://github.com/alexindigo/node-global-define/issues"
   },
-  "homepage": "https://github.com/alexindigo/node-requirejs-define"
+  "homepage": "https://github.com/alexindigo/node-global-define"
 }
