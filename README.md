@@ -1,6 +1,6 @@
-# global-define
+# Global Define
 
-Creates global define function to mimic requirejs define in node.
+AMD loader for Node, it creates global define function to mimic requirejs define in node.
 Using [amdefine](http://npmjs.org/package/amdefine) under the hood.
 
 And allows to require modules relative to `basePath` (*escaping `../../../../..` mess*).
