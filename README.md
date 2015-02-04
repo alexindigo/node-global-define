@@ -2,17 +2,20 @@
 
 AMD loader for Node, it creates global define function to mimic requirejs define in node.
 Using [amdefine](http://npmjs.org/package/amdefine) under the hood.
-
 And allows to require modules relative to `basePath` (*escaping `../../../../..` mess*).
 Combined with support for `paths` aliases, provides unified environment for modules shared between server and browser (isomorphic javascript).
+
+## Installiation
+
+```
+npm install global-define --save
+```
 
 ## Examples
 
 ### Basic
 
-Include following line within entry point of your application,
-and it will automatically add global define function to all
-included modules/files.
+Include following line within entry point of your application, and it will automatically add global define function to all included modules/files.
 
 `index.js`:
 
@@ -117,5 +120,20 @@ require('global-define')(
   basePath:  __dirname,
   blackList: ['node_modules/sinon/'],
   exposeAmdefine: true
+});
+```
+
+### Same file invocation
+
+If you want to use `global-define` within tne entry point of your application (*your index file*). It returns reference to the `define` function tailored for the invoking module:
+
+`index.js`:
+
+```javascript
+var define = require('global-define')({basePath: __dirname});
+
+define(['app/lib/helper'], function(Helper)
+{
+  // ...
 });
 ```
