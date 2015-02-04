@@ -20,7 +20,15 @@ Include following line within entry point of your application, and it will autom
 `index.js`:
 
 ```javascript
-require('global-define')({basePath: __dirname});
+var define = require('global-define')({basePath: __dirname});
+
+// `global-define` returns the `define` function for immediate use
+define([
+  'util'
+], function(util)
+{
+  // ...
+});
 ```
 
 `module.js`:
