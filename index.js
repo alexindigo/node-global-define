@@ -15,6 +15,16 @@ var originalRequireJS
   , minimatch      = require('minimatch')
   ;
 
+// public api
+module.exports = globalDefine;
+
+// expose internal method for easier integration
+globalDefine.amdefineWorkaround     = amdefineWorkaround;
+globalDefine.pretendRequire         = pretendRequire;
+globalDefine.pretendRequire_require = pretendRequire_require;
+globalDefine.isBlacklisted          = isBlacklisted;
+globalDefine.isWhitelisted          = isWhitelisted;
+
 // augment default js extension
 if (require.extensions['.js']._id != module.id)
 {
@@ -28,9 +38,9 @@ if (require.extensions['.js']._id != module.id)
 
     // create global define specific to the module
     // but only if its whitelisted and not blacklisted
-    if (isWhitelisted(requiredModule.id) && !isBlacklisted(requiredModule.id))
+    if (globalDefine.isWhitelisted(requiredModule.id) && !globalDefine.isBlacklisted(requiredModule.id))
     {
-      global.define = amdefineWorkaround(requiredModule);
+      global.define = globalDefine.amdefineWorkaround(requiredModule);
     }
     else
     {
@@ -52,7 +62,7 @@ if (require.extensions['.js']._id != module.id)
 }
 
 // export API function to update basePath
-module.exports = function(options)
+function globalDefine(options)
 {
   basePath  = options.basePath || process.cwd();
   paths     = options.paths || paths;
@@ -69,16 +79,16 @@ module.exports = function(options)
   basePathRegexp = new RegExp(('^' + basePath + '/').replace('/', '\\/'));
 
   // return define tailored to the requiring module
-  return amdefineWorkaround(module.parent || process.mainModule);
+  return globalDefine.amdefineWorkaround(module.parent || process.mainModule);
 }
 
 // create workaround for amdefine
-// to treat all the module equally
+// to treat all the modules equally
 // (by default it doesn't execute modules with ids)
 function amdefineWorkaround(requiredModule)
 {
   // prepare define function
-  var define = amdefine(requiredModule, pretendRequire(requiredModule));
+  var define = amdefine(requiredModule, globalDefine.pretendRequire(requiredModule));
 
   // return wrapper
   function wrapper(id, deps, initializer)
@@ -110,32 +120,37 @@ function amdefineWorkaround(requiredModule)
 // and replace it with absolute path
 function pretendRequire(baseModule)
 {
-  return function pretendRequire_require(moduleId)
+  return globalDefine.pretendRequire_require.bind(this, baseModule);
+}
+
+// Wrapping "original" require to allow inclussion
+// of the local files in the fashion of mode modules.
+// A-la requirejs/amd style
+// Note: used within pretendRequire function
+function pretendRequire_require(baseModule, moduleId)
+{
+  var componentPath
+      // translate module to path alias
+    , modulePath = checkPath(moduleId)
+      // get first part of the module path
+    , component = (modulePath || '').split('/')[0]
+    ;
+
+  // check if name and path belong to the app or to node_modules
+  if (component && component[0] != '.')
   {
+    componentPath = path.resolve(basePath, component);
 
-    var componentPath
-        // translate module to path alias
-      , modulePath = checkPath(moduleId)
-        // get first part of the module path
-      , component = (modulePath || '').split('/')[0]
-      ;
-
-    // check if name and path belong to the app or to node_modules
-    if (component && component[0] != '.')
+    if (fs.existsSync(componentPath))
     {
-      componentPath = path.resolve(basePath, component);
-
-      if (fs.existsSync(componentPath))
-      {
-        // everything fits nicely, get the full thing
-        // file might not exist at this point
-        // but its legit developer's error
-        modulePath = path.resolve(basePath, modulePath);
-      }
+      // everything fits nicely, get the full thing
+      // file might not exist at this point
+      // but its legit developer's error
+      modulePath = path.resolve(basePath, modulePath);
     }
-
-    return baseModule.require(modulePath);
   }
+
+  return baseModule.require(modulePath);
 }
 
 // check path aliases

@@ -3,9 +3,8 @@
 Creates global define function to mimic requirejs define in node.
 Using [amdefine](http://npmjs.org/package/amdefine) under the hood.
 
-Allows to require modules relative to `basePath` and escape `../../../../..` mess.
-Combined with support for `paths` aliases, provides unified environment
-for modules shared between server and browser (isomorphic javascript).
+And allows to require modules relative to `basePath` (*escaping `../../../../..` mess*).
+Combined with support for `paths` aliases, provides unified environment for modules shared between server and browser (isomorphic javascript).
 
 ## Examples
 
