@@ -5,14 +5,15 @@
 var originalRequireJS
   , basePath // root directory of the project
   , basePathRegexp // used for search-n-replace with black/white lists handling
-  , exposeAmdefine = false // flag for exposing `.amd` and `.require` properities of `amdefine`
-  , paths          = {} // paths aliases
-  , blackList      = [] // excludes patterns from global define
-  , whiteList      = [] // limits global define to patterns
-  , fs             = require('fs')
-  , path           = require('path')
-  , amdefine       = require('amdefine')
-  , minimatch      = require('minimatch')
+  , exposeAmdefine    = false // flag for exposing `.amd` and `.require` properities of `amdefine`
+  , paths             = {} // paths aliases
+  , blackList         = [] // excludes patterns from global define
+  , whiteList         = [] // limits global define to patterns
+  , fs                = require('fs')
+  , path              = require('path')
+  , amdefine          = require('amdefine')
+  , minimatch         = require('minimatch')
+  , deleteModuleCache = false // optionally delete require'd cache
   ;
 
 // public api
@@ -64,10 +65,11 @@ if (require.extensions['.js']._id != module.id)
 // export API function to update basePath
 function globalDefine(options)
 {
-  basePath  = options.basePath || process.cwd();
-  paths     = options.paths || paths;
-  blackList = options.blackList || blackList;
-  whiteList = options.whiteList || whiteList;
+  basePath          = options.basePath || process.cwd();
+  paths             = options.paths || paths;
+  blackList         = options.blackList || blackList;
+  whiteList         = options.whiteList || whiteList;
+  deleteModuleCache = options.deleteModuleCache || deleteModuleCache;
 
   // if flag provided override default value
   if ('exposeAmdefine' in options)
@@ -148,6 +150,11 @@ function pretendRequire_require(baseModule, moduleId)
       // but its legit developer's error
       modulePath = path.resolve(basePath, modulePath);
     }
+  }
+
+  if (deleteModuleCache) 
+  {
+    delete require.cache[(baseModule.id)];
   }
 
   return baseModule.require(modulePath);

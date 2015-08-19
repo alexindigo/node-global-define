@@ -137,3 +137,17 @@ define(['app/lib/helper'], function(Helper)
   // ...
 });
 ```
+
+### deleteModuleCache (default `false`)
+
+This allows you to pass in a boolean to delete the modules that you are requiring from nodes `require.cache` array. This is useful in development for making changes without having to restart your node server.
+
+`index.js`
+
+```javascript
+require('global-define')(
+{
+  basePath:  __dirname,
+  deleteModuleCache: true
+});
+```
