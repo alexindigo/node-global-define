@@ -152,9 +152,9 @@ function pretendRequire_require(baseModule, moduleId)
     }
   }
 
-  if (deleteModuleCache) 
+  if (deleteModuleCache)
   {
-    delete require.cache[(baseModule.id)];
+    delete require.cache[require.resolve(modulePath)];
   }
 
   return baseModule.require(modulePath);
