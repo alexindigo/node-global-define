@@ -56,7 +56,7 @@ if (require.extensions['.js']._id != module.id)
     global.define = originalDefine;
 
     return compiledModule;
-  }
+  };
 
   // mark the thing
   require.extensions['.js']._id = module.id;
@@ -141,7 +141,16 @@ function pretendRequire_require(baseModule, moduleId)
   // check if name and path belong to the app or to node_modules
   if (component && component[0] != '.')
   {
-    componentPath = path.resolve(basePath, component);
+    // - existing file vs. node_modules case
+    if (component == modulePath)
+    {
+      componentPath = path.resolve(basePath, modulePath + '.js');
+    }
+    // - existing folder vs. node_modules member case
+    else
+    {
+      componentPath = path.resolve(basePath, component);
+    }
 
     if (fs.existsSync(componentPath))
     {
