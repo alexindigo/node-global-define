@@ -43,9 +43,12 @@ if (require.extensions['.js']._id != module.id)
 // export API function to update basePath
 function GlobalDefine(options)
 {
+  var globalDefine;
+
   if (!(this instanceof GlobalDefine))
   {
-    return new GlobalDefine(options);
+    globalDefine = new GlobalDefine(options);
+    return globalDefine.amdefineWorkaround(globalDefine.getCallerModule());
   }
 
   this.basePath     = options.basePath || process.cwd();
