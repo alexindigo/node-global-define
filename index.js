@@ -3,85 +3,73 @@
  */
 
 var originalRequireJS
-  , basePath // root directory of the project
-  , basePathRegexp // used for search-n-replace with black/white lists handling
-  , exposeAmdefine    = false // flag for exposing `.amd` and `.require` properities of `amdefine`
-  , paths             = {} // paths aliases
-  , blackList         = [] // excludes patterns from global define
-  , whiteList         = [] // limits global define to patterns
-  , fs                = require('fs')
-  , path              = require('path')
-  , amdefine          = require('amdefine')
-  , minimatch         = require('minimatch')
-  , deleteModuleCache = false // optionally delete require'd cache
+    // default values
+  , exposeAmdefine = false // flag for exposing `.amd` and `.require` properties of `amdefine`
+  , paths          = {} // paths aliases
+  , blackList      = [] // excludes patterns from global define
+  , whiteList      = [] // limits global define to patterns
+  , disableCache   = false // disable require'd cache
+    // modules
+  , fs             = require('fs')
+  , path           = require('path')
+  , amdefine       = require('amdefine')
+  , minimatch      = require('minimatch')
   ;
 
 // public api
-module.exports = globalDefine;
+module.exports = GlobalDefine;
 
 // expose internal method for easier integration
-globalDefine.amdefineWorkaround     = amdefineWorkaround;
-globalDefine.pretendRequire         = pretendRequire;
-globalDefine.pretendRequire_require = pretendRequire_require;
-globalDefine.isBlacklisted          = isBlacklisted;
-globalDefine.isWhitelisted          = isWhitelisted;
+GlobalDefine.prototype.getCallerModule    = getCallerModule;
+GlobalDefine.prototype.amdefineWorkaround = amdefineWorkaround;
+GlobalDefine.prototype.pretendRequire     = pretendRequire;
+GlobalDefine.prototype.requireWrapper     = requireWrapper;
+GlobalDefine.prototype.checkPath          = checkPath;
+GlobalDefine.prototype.isBlacklisted      = isBlacklisted;
+GlobalDefine.prototype.isWhitelisted      = isWhitelisted;
+// "private"/"static" api
+GlobalDefine._customRequireHandler        = customRequireHandler;
 
-// augment default js extension
+// augment default js extension, only once
 if (require.extensions['.js']._id != module.id)
 {
   // hijack .js handler to add module specific define function to global namespace
   originalRequireJS = require.extensions['.js'];
-  require.extensions['.js'] = function customRequireHandler(requiredModule, filename)
-  {
-    var compiledModule
-      , originalDefine = global.define // preserve original global define
-      ;
-
-    // create global define specific to the module
-    // but only if its whitelisted and not blacklisted
-    if (globalDefine.isWhitelisted(requiredModule.id) && !globalDefine.isBlacklisted(requiredModule.id))
-    {
-      global.define = globalDefine.amdefineWorkaround(requiredModule);
-    }
-    else
-    {
-      // reset global define
-      delete global.define;
-    }
-
-    // compile module as per normal workflow
-    compiledModule = originalRequireJS(requiredModule, filename);
-
-    // revert back global define
-    global.define = originalDefine;
-
-    return compiledModule;
-  };
-
+  require.extensions['.js'] = customRequireHandler;
   // mark the thing
   require.extensions['.js']._id = module.id;
 }
 
 // export API function to update basePath
-function globalDefine(options)
+function GlobalDefine(options)
 {
-  basePath          = options.basePath || process.cwd();
-  paths             = options.paths || paths;
-  blackList         = options.blackList || blackList;
-  whiteList         = options.whiteList || whiteList;
-  deleteModuleCache = options.deleteModuleCache || deleteModuleCache;
-
-  // if flag provided override default value
-  if ('exposeAmdefine' in options)
+  if (!(this instanceof GlobalDefine))
   {
-    exposeAmdefine = options.exposeAmdefine;
+    return new GlobalDefine(options);
   }
 
+  this.basePath     = options.basePath || process.cwd();
+  this.paths        = options.paths || paths;
+  this.blackList    = options.blackList || blackList;
+  this.whiteList    = options.whiteList || whiteList;
+  this.disableCache = options.disableCache || disableCache;
+  // if flag provided override default value
+  this.exposeAmdefine = ('exposeAmdefine' in options) ? options.exposeAmdefine : exposeAmdefine;
+
   // construct basePath regexp
-  basePathRegexp = new RegExp(('^' + basePath + '/').replace('/', '\\/'));
+  this.basePathRegexp = new RegExp(('^' + this.basePath + '/').replace('/', '\\/'));
+
+  // keep reference to the define instance
+  this.getCallerModule()._globalDefine = this;
 
   // return define tailored to the requiring module
-  return globalDefine.amdefineWorkaround(module.parent || process.mainModule);
+  return this.amdefineWorkaround(this.getCallerModule());
+}
+
+// gets caller (parent or top most) module
+function getCallerModule()
+{
+  return module.parent || process.mainModule;
 }
 
 // create workaround for amdefine
@@ -90,7 +78,7 @@ function globalDefine(options)
 function amdefineWorkaround(requiredModule)
 {
   // prepare define function
-  var define = amdefine(requiredModule, globalDefine.pretendRequire(requiredModule));
+  var define = amdefine(requiredModule, this.pretendRequire(requiredModule));
 
   // return wrapper
   function wrapper(id, deps, initializer)
@@ -107,7 +95,7 @@ function amdefineWorkaround(requiredModule)
   }
 
   // make it look like legit thing
-  if (exposeAmdefine)
+  if (this.exposeAmdefine)
   {
     wrapper.amd     = define.amd;
     wrapper.require = define.require;
@@ -122,18 +110,18 @@ function amdefineWorkaround(requiredModule)
 // and replace it with absolute path
 function pretendRequire(baseModule)
 {
-  return globalDefine.pretendRequire_require.bind(this, baseModule);
+  return this.requireWrapper.bind(this, baseModule);
 }
 
-// Wrapping "original" require to allow inclussion
+// Wrapping "original" require to allow inclusion
 // of the local files in the fashion of mode modules.
 // A-la requirejs/amd style
 // Note: used within pretendRequire function
-function pretendRequire_require(baseModule, moduleId)
+function requireWrapper(baseModule, moduleId)
 {
   var componentPath
       // translate module to path alias
-    , modulePath = checkPath(moduleId)
+    , modulePath = this.checkPath(moduleId)
       // get first part of the module path
     , component = (modulePath || '').split('/')[0]
     ;
@@ -144,12 +132,12 @@ function pretendRequire_require(baseModule, moduleId)
     // - existing file vs. node_modules case
     if (component == modulePath)
     {
-      componentPath = path.resolve(basePath, modulePath + '.js');
+      componentPath = path.resolve(this.basePath, modulePath + '.js');
     }
     // - existing folder vs. node_modules member case
     else
     {
-      componentPath = path.resolve(basePath, component);
+      componentPath = path.resolve(this.basePath, component);
     }
 
     if (fs.existsSync(componentPath))
@@ -157,11 +145,11 @@ function pretendRequire_require(baseModule, moduleId)
       // everything fits nicely, get the full thing
       // file might not exist at this point
       // but its legit developer's error
-      modulePath = path.resolve(basePath, modulePath);
+      modulePath = path.resolve(this.basePath, modulePath);
     }
   }
 
-  if (deleteModuleCache)
+  if (this.disableCache)
   {
     delete require.cache[require.resolve(modulePath)];
   }
@@ -174,11 +162,11 @@ function checkPath(id)
 {
   var p;
 
-  for (p in paths)
+  for (p in this.paths)
   {
     if (id.indexOf(p) == 0)
     {
-      return id.replace(p, paths[p]);
+      return id.replace(p, this.paths[p]);
     }
   }
 
@@ -191,11 +179,11 @@ function isBlacklisted(moduleId)
   var i;
 
   // strip basePath
-  moduleId = moduleId.replace(basePathRegexp, '');
+  moduleId = moduleId.replace(this.basePathRegexp, '');
 
-  for (i=0; i<blackList.length; i++)
+  for (i = 0; i < this.blackList.length; i++)
   {
-    if (minimatch(moduleId, blackList[i]))
+    if (minimatch(moduleId, this.blackList[i]))
     {
       return true;
     }
@@ -211,21 +199,48 @@ function isWhitelisted(moduleId)
   var i;
 
   // check if its empty
-  if (!whiteList.length)
+  if (!this.whiteList.length)
   {
     return true;
   }
 
   // strip basePath
-  moduleId = moduleId.replace(basePathRegexp, '');
+  moduleId = moduleId.replace(this.basePathRegexp, '');
 
-  for (i=0; i<whiteList.length; i++)
+  for (i = 0; i < this.whiteList.length; i++)
   {
-    if (minimatch(moduleId, whiteList[i]))
+    if (minimatch(moduleId, this.whiteList[i]))
     {
       return true;
     }
   }
 
   return false;
+}
+
+// --- "Private"/"Static" methods
+
+function customRequireHandler(requiredModule, filename)
+{
+  // pass globalDefine instance from parent to child module
+  if (requiredModule.parent && requiredModule.parent._globalDefine)
+  {
+    // inherited instance
+    requiredModule._globalDefine = requiredModule.parent._globalDefine;
+  }
+
+  // create global define specific to the module
+  // but only if its whitelisted and not blacklisted
+  if (requiredModule._globalDefine && requiredModule._globalDefine.isWhitelisted(requiredModule.id) && !requiredModule._globalDefine.isBlacklisted(requiredModule.id))
+  {
+    global.define = requiredModule._globalDefine.amdefineWorkaround(requiredModule);
+  }
+  else
+  {
+    // reset global define
+    delete global.define;
+  }
+
+  // compile module as per normal workflow
+  return originalRequireJS(requiredModule, filename);
 }

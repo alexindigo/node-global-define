@@ -1,11 +1,24 @@
 # Global Define
 
-AMD loader for Node, it creates global define function to mimic requirejs define in node.
-Using [amdefine](http://npmjs.org/package/amdefine) under the hood.
-And allows to require modules relative to `basePath` (*escaping `../../../../..` mess*).
+AMD loader for Node, it creates global `define` function to provide AMD-style define in node.
+
+TL;DR
+
+```javascript
+// works in node and in a browser (with requirejs)
+define([
+  'app/models/property',
+  'es6!some-module'
+], function(Property, someES6Module)
+{
+  // ...
+});
+```
+
+And allows to require modules relative to the `basePath` (*escaping `../../../../..` mess*).
 Combined with support for `paths` aliases, provides unified environment for modules shared between server and browser (isomorphic javascript).
 
-## Installiation
+## Installation
 
 ```
 npm install global-define --save
@@ -26,7 +39,6 @@ require('global-define')({basePath: __dirname});
 `module.js`:
 
 ```javascript
-// works in node and in a browser
 define([
   'app/models/property',
   'app/collections/property_search'
@@ -125,7 +137,7 @@ require('global-define')(
 
 ### Same file invocation
 
-If you want to use `global-define` within tne entry point of your application (*your index file*). It returns reference to the `define` function tailored for the invoking module:
+If you want to use `global-define` within the entry point of your application (*your index file*). It returns reference to the `define` function tailored for the invoking module:
 
 `index.js`:
 
@@ -138,9 +150,9 @@ define(['app/lib/helper'], function(Helper)
 });
 ```
 
-### deleteModuleCache (default `false`)
+### disableCache (default: `false`)
 
-This allows you to pass in a boolean to delete the modules that you are requiring from nodes `require.cache` array. This is useful in development for making changes without having to restart your node server. Please use with caution, this approach is prone to unforeseen side effects.
+This allows you to pass in a boolean to disable caching of the modules that you are requiring from `require.cache`. This might be useful in development for making changes without having to restart your node server. Please use it with caution, this approach is prone to unforeseen side effects.
 
 `index.js`
 
@@ -148,6 +160,12 @@ This allows you to pass in a boolean to delete the modules that you are requirin
 require('global-define')(
 {
   basePath:  __dirname,
-  deleteModuleCache: true
+  disableCache: true
 });
 ```
+
+## Notes
+
+- Uses [amdefine](http://npmjs.org/package/amdefine) under the hood.
+- Supports nesting with different configurations.
+- Supports CommonJS requirement of the modules using `global-define` internally.
