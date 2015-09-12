@@ -64,9 +64,6 @@ function GlobalDefine(options)
 
   // keep reference to the define instance
   this.getCallerModule()._globalDefine = this;
-
-  // return define tailored to the requiring module
-  return this.amdefineWorkaround(this.getCallerModule());
 }
 
 // gets caller (parent or top most) module
