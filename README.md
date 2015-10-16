@@ -116,6 +116,27 @@ require('global-define')(
 });
 ```
 
+### Upstream propagation
+
+In some cases your "topmost" module get required by some other module(s)
+and you'd like to allow modules required from upstream to enjoy
+benefits of `global-define`. Main use case is test frameworks,
+that require you app module on separate branch from your config/test files.
+
+To signal `global-define` to propagate it's instance upstream, use `forceUpstream` flag.
+
+`test/config.js`:
+
+```javascript
+var path = require('path');
+require('global-define')(
+{
+  forceUpstream: true,
+  basePath: path.join(__dirname, '..'),
+  paths: {'buster-test/': 'buster-test/lib/'},
+});
+```
+
 ### Expose AMDefine
 
 By default it creates only global `define` function, so UMD modules still opt-in for server-side way of doing things (some of them are using UMD not only for loading resources, but to choose between browser/server branches of the code).

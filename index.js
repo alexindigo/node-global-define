@@ -21,6 +21,7 @@ module.exports = GlobalDefine;
 
 // expose internal method for easier integration
 GlobalDefine.prototype.getCallerModule    = getCallerModule;
+GlobalDefine.prototype.propagateUpstream  = propagateUpstream;
 GlobalDefine.prototype.amdefineWorkaround = amdefineWorkaround;
 GlobalDefine.prototype.pretendRequire     = pretendRequire;
 GlobalDefine.prototype.requireWrapper     = requireWrapper;
@@ -62,14 +63,30 @@ function GlobalDefine(options)
   // construct basePath regexp
   this.basePathRegexp = new RegExp(('^' + this.basePath + '/').replace('/', '\\/'));
 
-  // keep reference to the define instance
-  this.getCallerModule()._globalDefine = this;
+  // propagate upstream to allow global-define on sibling branches
+  this.propagateUpstream(this.getCallerModule(), options.forceUpstream);
 }
 
 // gets caller (parent or top most) module
 function getCallerModule()
 {
   return module.parent || process.mainModule;
+}
+
+// propagates global-define instance upstream
+// until it bumps into another globalDefine instance
+function propagateUpstream(parentModule, shouldPropagate)
+{
+  // do not step on another global-define instance
+  if (parentModule._globalDefine) return;
+
+  // keep reference to the define instance
+  parentModule._globalDefine = this;
+
+  if (shouldPropagate && parentModule.parent)
+  {
+    this.propagateUpstream(parentModule.parent, shouldPropagate);
+  }
 }
 
 // create workaround for amdefine
