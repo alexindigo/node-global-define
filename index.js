@@ -239,6 +239,9 @@ function isWhitelisted(moduleId)
 
 function customRequireHandler(requiredModule, filename)
 {
+  // store current value of the global.define
+  var moduleContent, parentDefine = global.define;
+
   // pass globalDefine instance from parent to child module
   if (requiredModule.parent && requiredModule.parent._globalDefine)
   {
@@ -259,5 +262,10 @@ function customRequireHandler(requiredModule, filename)
   }
 
   // compile module as per normal workflow
-  return originalRequireJS(requiredModule, filename);
+  moduleContent = originalRequireJS(requiredModule, filename);
+
+  // reset global define back to the previous value
+  global.define = parentDefine;
+
+  return moduleContent;
 }

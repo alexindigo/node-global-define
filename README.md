@@ -18,6 +18,8 @@ define([
 And allows to require modules relative to the `basePath` (*escaping `../../../../..` mess*).
 Combined with support for `paths` aliases, provides unified environment for modules shared between server and browser (isomorphic javascript).
 
+*Note: it exposes `global.define` method per module (module specific) and only at load time.*
+
 ## Installation
 
 ```
