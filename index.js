@@ -3,6 +3,7 @@
  */
 
 var originalRequireJS
+  , originalModuleCompile
     // default values
   , exposeAmdefine = false // flag for exposing `.amd` and `.require` properties of `amdefine`
   , paths          = {} // paths aliases
@@ -12,6 +13,7 @@ var originalRequireJS
     // modules
   , fs             = require('fs')
   , path           = require('path')
+  , Module         = require('module')
   , amdefine       = require('amdefine')
   , minimatch      = require('minimatch')
   ;
@@ -54,6 +56,7 @@ function GlobalDefine(options)
 
   this.basePath     = options.basePath || process.cwd();
   this.paths        = options.paths || paths;
+  this.pathsKeys    = Object.keys(this.paths).sort(sortPaths);
   this.blackList    = options.blackList || blackList;
   this.whiteList    = options.whiteList || whiteList;
   this.disableCache = options.disableCache || disableCache;
@@ -65,6 +68,19 @@ function GlobalDefine(options)
 
   // propagate upstream to allow global-define on sibling branches
   this.propagateUpstream(this.getCallerModule(), options.forceUpstream);
+
+  // being a little bit brutal
+  // for things that go around normal module loading process
+  // like `istanbul`, that reads (`fs.readFileSync(filename, 'utf8')`)
+  // and runs `module._compile(code, filename);` compilation step
+  // skipping loading extensions.
+  // But do it only once, no need to step on itself
+  if (options.invasiveMode && Module.prototype._compile._id != module.id)
+  {
+    originalModuleCompile = Module.prototype._compile;
+    Module.prototype._compile = customModuleCompile;
+    Module.prototype._compile._id = module.id;
+  }
 }
 
 // gets caller (parent or top most) module
@@ -143,6 +159,12 @@ function requireWrapper(baseModule, moduleId)
     , component = (modulePath || '').split('/')[0]
     ;
 
+  // shortcut for `empty:` path
+  if (modulePath == 'empty:')
+  {
+    return {};
+  }
+
   // check if name and path belong to the app or to node_modules
   if (component && component[0] != '.')
   {
@@ -177,13 +199,21 @@ function requireWrapper(baseModule, moduleId)
 // check path aliases
 function checkPath(id)
 {
-  var p;
+  var i;
 
-  for (p in this.paths)
+  for (i = 0; i < this.pathsKeys.length; i++)
   {
-    if (id.indexOf(p) == 0)
+    if (id.indexOf(this.pathsKeys[i]) == 0)
     {
-      return id.replace(p, this.paths[p]);
+      if (this.paths[this.pathsKeys[i]] == 'empty:')
+      {
+        id = 'empty:';
+      }
+      else
+      {
+        id = id.replace(this.pathsKeys[i], this.paths[this.pathsKeys[i]]);
+      }
+      break;
     }
   }
 
@@ -237,11 +267,45 @@ function isWhitelisted(moduleId)
 
 // --- "Private"/"Static" methods
 
+// replaces original `module._compile` for invasive mode
+// but if this._globalDefine is present means our work here is done
+// and reset global define back to the previous value
+function customModuleCompile(content, filename)
+{
+  var moduleExceptions, parentDefine = global.define;
+
+  if (!this._globalDefine)
+  {
+    setGlobalDefine(this);
+  }
+
+  moduleExceptions = originalModuleCompile.call(this, content, filename);
+
+  global.define = parentDefine;
+
+  return moduleExceptions;
+}
+
 function customRequireHandler(requiredModule, filename)
 {
   // store current value of the global.define
   var moduleContent, parentDefine = global.define;
 
+  // set global define for the required module
+  setGlobalDefine(requiredModule);
+
+  // compile module as per normal workflow
+  moduleContent = originalRequireJS(requiredModule, filename);
+
+  // reset global define back to the previous value
+  global.define = parentDefine;
+
+  return moduleContent;
+}
+
+// sets _globalDefine and global.define if needed
+function setGlobalDefine(requiredModule)
+{
   // pass globalDefine instance from parent to child module
   if (requiredModule.parent && requiredModule.parent._globalDefine)
   {
@@ -260,12 +324,10 @@ function customRequireHandler(requiredModule, filename)
     // reset global define
     delete global.define;
   }
+}
 
-  // compile module as per normal workflow
-  moduleContent = originalRequireJS(requiredModule, filename);
-
-  // reset global define back to the previous value
-  global.define = parentDefine;
-
-  return moduleContent;
+// Sorts paths to have more specific paths earlier in the game
+function sortPaths(a, b)
+{
+  return b.length - a.length;
 }

@@ -158,6 +158,26 @@ require('global-define')(
 });
 ```
 
+### Invasive Mode
+
+Some instrumentation libraries (e.g. `istanbul`) break standard loading procedure
+and go around normal (loading extensions) way. To allow `global-define` work with
+files loaded that (manual) way, use invasive mode (overrides `Module._compile` method)
+and injects `global.define` before compilation step.
+
+*Note: Most likely you don't need this option, unless you're doing some kind of instrumentation,
+with one of such libraries.*
+
+`index.js`:
+
+```javascript
+require('global-define')(
+{
+  basePath:  __dirname,
+  invasiveMode: true
+});
+```
+
 ### Same file invocation
 
 If you want to use `global-define` within the entry point of your application (*your index file*). It returns reference to the `define` function tailored for the invoking module:
