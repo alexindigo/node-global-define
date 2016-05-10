@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "eslint": "^0.24.1",
-    "pre-commit": "^1.1.1"
+    "pre-commit": "^1.1.3"
   },
   "author": "Alex Indigo <iam@alexindigo.com>",
   "license": "MIT",
