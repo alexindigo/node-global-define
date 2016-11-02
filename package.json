@@ -25,7 +25,7 @@
     "isomorphic"
   ],
   "dependencies": {
-    "amdefine": ">=0.1.0",
+    "amdefine": ">=1.0.1",
     "minimatch": "2.x"
   },
   "devDependencies": {
