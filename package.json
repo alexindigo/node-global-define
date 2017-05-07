@@ -26,7 +26,7 @@
   ],
   "dependencies": {
     "amdefine": ">=0.1.0",
-    "minimatch": "2.x"
+    "minimatch": "3.0.4"
   },
   "devDependencies": {
     "eslint": "^0.24.1",
