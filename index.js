@@ -10,6 +10,7 @@ var originalRequireJS
   , blackList      = [] // excludes patterns from global define
   , whiteList      = [] // limits global define to patterns
   , disableCache   = false // disable require'd cache
+  , aliasRequire   = false // alias standalone require statements
     // modules
   , fs             = require('fs')
   , path           = require('path')
@@ -60,6 +61,7 @@ function GlobalDefine(options)
   this.blackList    = options.blackList || blackList;
   this.whiteList    = options.whiteList || whiteList;
   this.disableCache = options.disableCache || disableCache;
+  this.aliasRequire = options.aliasRequire || aliasRequire;
   // if flag provided override default value
   this.exposeAmdefine = ('exposeAmdefine' in options) ? options.exposeAmdefine : exposeAmdefine;
 
@@ -318,6 +320,16 @@ function setGlobalDefine(requiredModule)
   if (requiredModule._globalDefine && requiredModule._globalDefine.isWhitelisted(requiredModule.id) && !requiredModule._globalDefine.isBlacklisted(requiredModule.id))
   {
     global.define = requiredModule._globalDefine.amdefineWorkaround(requiredModule);
+
+    // run required paths through alias substituion
+    if (requiredModule._globalDefine.aliasRequire)
+    {
+      requiredModule._originalRequire = requiredModule.require;
+      requiredModule.require = function(modulePath)
+      {
+        return requiredModule._originalRequire.call(this, requiredModule._globalDefine.checkPath(modulePath));
+      }
+    }
   }
   else
   {

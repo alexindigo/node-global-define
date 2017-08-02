@@ -178,6 +178,30 @@ require('global-define')(
 });
 ```
 
+### Alias Require
+
+Some (isomorphic/universal) modules expected to work only when treated with a packaging solution (e.g. `webpack`),
+and rely on the bundler to resolve the paths passed to the require function (`require('app/router')`).
+To combat this issue while running it in node (i.e. for unit testing purposes), use `aliasRequire` flag.
+
+`index.js`:
+
+```javascript
+require('global-define')(
+{
+  basePath:  __dirname,
+  aliasRequire: true,
+
+  paths:
+  {
+    'chart.js'             : 'empty:', // will return empty object
+    'custom-scoped-module' : 'node_modules/@npmcorp/custom-scoped-module/index.js',
+    'app'                  : path.join(__dirname, 'app') // will search for under `app` folder
+  }
+});
+```
+
+
 ### Same file invocation
 
 If you want to use `global-define` within the entry point of your application (*your index file*). It returns reference to the `define` function tailored for the invoking module:
