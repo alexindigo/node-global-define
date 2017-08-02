@@ -1,6 +1,6 @@
 {
   "name": "global-define",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Creates global `define` function to provide AMD-style define in node",
   "main": "index.js",
   "scripts": {
